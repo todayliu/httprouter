@@ -78,7 +78,6 @@ package httprouter
 
 import (
 	"net/http"
-	"strings"
 )
 
 // Handle is a function that can be registered to a route to handle HTTP
