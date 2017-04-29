@@ -78,6 +78,7 @@ package httprouter
 
 import (
 	"net/http"
+	"strings"
 )
 
 // Handle is a function that can be registered to a route to handle HTTP
@@ -112,7 +113,7 @@ func (ps Params) Get(key string) interface{} {
 
 	for i := range ps {
 		if ps[i].Key == key {
-			if( "" == ps[i].Value){
+			if len(ps[i].Value) == 0 {
 				return ps[i].Context
 			}else{
 				return ps[i].Value
