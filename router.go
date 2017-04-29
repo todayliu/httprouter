@@ -246,6 +246,33 @@ func (r *Router) Handler(method, path string, handler http.Handler) {
 	)
 }
 
+type Kabob func(APIHandler) APIHandler
+type APIHandler func(http.ResponseWriter, *http.Request,Params) (interface{}, error)
+/**
+ * 中间件实现
+ */
+var shish  = make([]Kabob,0)
+/**
+ * 加入中间件
+ * router.Use(Loger)
+ */
+func (r *Router) Use( kabob ... Kabob){
+	shish = append(shish,kabob ...)
+}
+
+func Then(f APIHandler, ds ...Kabob) Handle {
+	decorated := f
+	ds = append(ds,shish ...);
+	for _, decorate := range ds {
+		decorated = decorate(decorated)
+	}
+	return func(w http.ResponseWriter, req *http.Request, ps Params) {
+		decorated(w, req, ps)
+	}
+}
+
+
+
 // HandlerFunc is an adapter which allows the usage of an http.HandlerFunc as a
 // request handle.
 func (r *Router) HandlerFunc(method, path string, handler http.HandlerFunc) {
