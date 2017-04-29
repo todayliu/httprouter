@@ -1,4 +1,4 @@
-# HttpRouter [![Build Status](https://travis-ci.org/julienschmidt/httprouter.svg?branch=master)](https://travis-ci.org/julienschmidt/httprouter) [![GoDoc](https://godoc.org/github.com/julienschmidt/httprouter?status.svg)](http://godoc.org/github.com/julienschmidt/httprouter)
+# HttpRouter [![Build Status](https://travis-ci.org/julienschmidt/httprouter.svg?branch=master)](https://travis-ci.org/julienschmidt/httprouter) [![GoDoc](https://godoc.org/github.com/todayliu/httprouter?status.svg)](http://godoc.org/github.com/todayliu/httprouter)
 
 HttpRouter is a lightweight high performance HTTP request router (also called *multiplexer* or just *mux* for short) for [Go](https://golang.org/).
 
@@ -10,7 +10,7 @@ The router is optimized for high performance and a small memory footprint. It sc
 
 **Only explicit matches:** With other routers, like [`http.ServeMux`](https://golang.org/pkg/net/http/#ServeMux), a requested URL path could match multiple patterns. Therefore they have some awkward pattern priority rules, like *longest match* or *first registered, first matched*. By design of this router, a request can only match exactly one or no route. As a result, there are also no unintended matches, which makes it great for SEO and improves the user experience.
 
-**Stop caring about trailing slashes:** Choose the URL style you like, the router automatically redirects the client if a trailing slash is missing or if there is one extra. Of course it only does so, if the new path has a handler. If you don't like it, you can [turn off this behavior](https://godoc.org/github.com/julienschmidt/httprouter#Router.RedirectTrailingSlash).
+**Stop caring about trailing slashes:** Choose the URL style you like, the router automatically redirects the client if a trailing slash is missing or if there is one extra. Of course it only does so, if the new path has a handler. If you don't like it, you can [turn off this behavior](https://godoc.org/github.com/todayliu/httprouter#Router.RedirectTrailingSlash).
 
 **Path auto-correction:** Besides detecting the missing or additional trailing slash at no extra cost, the router can also fix wrong cases and remove superfluous path elements (like `../` or `//`). Is [CAPTAIN CAPS LOCK](http://www.urbandictionary.com/define.php?term=Captain+Caps+Lock) one of your users? HttpRouter can help him by making a case-insensitive look-up and redirecting him to the correct URL.
 
@@ -20,15 +20,15 @@ The router is optimized for high performance and a small memory footprint. It sc
 
 **Best Performance:** [Benchmarks speak for themselves](https://github.com/julienschmidt/go-http-routing-benchmark). See below for technical details of the implementation.
 
-**No more server crashes:** You can set a [Panic handler](https://godoc.org/github.com/julienschmidt/httprouter#Router.PanicHandler) to deal with panics occurring during handling a HTTP request. The router then recovers and lets the `PanicHandler` log what happened and deliver a nice error page.
+**No more server crashes:** You can set a [Panic handler](https://godoc.org/github.com/todayliu/httprouter#Router.PanicHandler) to deal with panics occurring during handling a HTTP request. The router then recovers and lets the `PanicHandler` log what happened and deliver a nice error page.
 
 **Perfect for APIs:** The router design encourages to build sensible, hierarchical RESTful APIs. Moreover it has builtin native support for [OPTIONS requests](http://zacstewart.com/2012/04/14/http-options-method.html) and `405 Method Not Allowed` replies.
 
-Of course you can also set **custom [`NotFound`](https://godoc.org/github.com/julienschmidt/httprouter#Router.NotFound) and  [`MethodNotAllowed`](https://godoc.org/github.com/julienschmidt/httprouter#Router.MethodNotAllowed) handlers** and [**serve static files**](https://godoc.org/github.com/julienschmidt/httprouter#Router.ServeFiles).
+Of course you can also set **custom [`NotFound`](https://godoc.org/github.com/todayliu/httprouter#Router.NotFound) and  [`MethodNotAllowed`](https://godoc.org/github.com/todayliu/httprouter#Router.MethodNotAllowed) handlers** and [**serve static files**](https://godoc.org/github.com/todayliu/httprouter#Router.ServeFiles).
 
 ## Usage
 
-This is just a quick introduction, view the [GoDoc](http://godoc.org/github.com/julienschmidt/httprouter) for details.
+This is just a quick introduction, view the [GoDoc](http://godoc.org/github.com/todayliu/httprouter) for details.
 
 Let's start with a trivial example:
 
@@ -36,27 +36,58 @@ Let's start with a trivial example:
 package main
 
 import (
-    "fmt"
-    "github.com/julienschmidt/httprouter"
-    "net/http"
-    "log"
+	"fmt"
+	"github.com/todayliu/httprouter"
+	"net/http"
+	"log"
 )
 
-func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-    fmt.Fprint(w, "Welcome!\n")
+
+
+func Index(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	fmt.Fprint(w, "Welcome!\n")
 }
 
-func Hello(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-    fmt.Fprintf(w, "hello, %s!\n", ps.ByName("name"))
+func Hello(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	fmt.Fprintf(w, "hello, %s!\n", params.ByName("name"))
 }
-
+func V1(next httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+		fmt.Println("1")
+		next(w, req, ps)
+		fmt.Println("11")
+	}
+}
+func V2(next httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+		fmt.Println("2")
+		next(w, req, ps)
+		fmt.Println("22")
+	}
+}
+func V3(next httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+		fmt.Println("3")
+		next(w, req, ps)
+		fmt.Println("33")
+	}
+}
+func V4(next httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+		fmt.Println("4")
+		next(w, req, ps)
+		fmt.Println("44")
+	}
+}
 func main() {
-    router := httprouter.New()
-    router.GET("/", Index)
-    router.GET("/hello/:name", Hello)
+	router := httprouter.New()
+	router.Use(V1,V2)
+	router.GET("/", router.Then(Index,V3,V4))
+	router.GET("/hello/:name", Hello)
 
-    log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
+
 ```
 
 ### Named parameters
@@ -127,7 +158,7 @@ For even better scalability, the child nodes on each tree level are ordered by p
 
 ## Why doesn't this work with `http.Handler`?
 
-**It does!** The router itself implements the `http.Handler` interface. Moreover the router provides convenient [adapters for `http.Handler`](https://godoc.org/github.com/julienschmidt/httprouter#Router.Handler)s and [`http.HandlerFunc`](https://godoc.org/github.com/julienschmidt/httprouter#Router.HandlerFunc)s which allows them to be used as a [`httprouter.Handle`](https://godoc.org/github.com/julienschmidt/httprouter#Router.Handle) when registering a route. The only disadvantage is, that no parameter values can be retrieved when a `http.Handler` or `http.HandlerFunc` is used, since there is no efficient way to pass the values with the existing function parameters. Therefore [`httprouter.Handle`](https://godoc.org/github.com/julienschmidt/httprouter#Router.Handle) has a third function parameter.
+**It does!** The router itself implements the `http.Handler` interface. Moreover the router provides convenient [adapters for `http.Handler`](https://godoc.org/github.com/todayliu/httprouter#Router.Handler)s and [`http.HandlerFunc`](https://godoc.org/github.com/todayliu/httprouter#Router.HandlerFunc)s which allows them to be used as a [`httprouter.Handle`](https://godoc.org/github.com/todayliu/httprouter#Router.Handle) when registering a route. The only disadvantage is, that no parameter values can be retrieved when a `http.Handler` or `http.HandlerFunc` is used, since there is no efficient way to pass the values with the existing function parameters. Therefore [`httprouter.Handle`](https://godoc.org/github.com/todayliu/httprouter#Router.Handle) has a third function parameter.
 
 Just try it out for yourself, the usage of HttpRouter is very straightforward. The package is compact and minimalistic, but also probably one of the easiest routers to set up.
 
@@ -189,7 +220,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/todayliu/httprouter"
 )
 
 func BasicAuth(h httprouter.Handle, requiredUser, requiredPassword string) httprouter.Handle {
@@ -230,9 +261,9 @@ func main() {
 
 ## Chaining with the NotFound handler
 
-**NOTE: It might be required to set [`Router.HandleMethodNotAllowed`](https://godoc.org/github.com/julienschmidt/httprouter#Router.HandleMethodNotAllowed) to `false` to avoid problems.**
+**NOTE: It might be required to set [`Router.HandleMethodNotAllowed`](https://godoc.org/github.com/todayliu/httprouter#Router.HandleMethodNotAllowed) to `false` to avoid problems.**
 
-You can use another [`http.Handler`](https://golang.org/pkg/net/http/#Handler), for example another router, to handle requests which could not be matched by this router by using the [`Router.NotFound`](https://godoc.org/github.com/julienschmidt/httprouter#Router.NotFound) handler. This allows chaining.
+You can use another [`http.Handler`](https://golang.org/pkg/net/http/#Handler), for example another router, to handle requests which could not be matched by this router by using the [`Router.NotFound`](https://godoc.org/github.com/todayliu/httprouter#Router.NotFound) handler. This allows chaining.
 
 ### Static files
 

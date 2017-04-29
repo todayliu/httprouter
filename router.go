@@ -246,8 +246,7 @@ func (r *Router) Handler(method, path string, handler http.Handler) {
 	)
 }
 
-type Kabob func(APIHandler) APIHandler
-type APIHandler func(http.ResponseWriter, *http.Request,Params) (interface{}, error)
+type Kabob func(Handle) Handle
 /**
  * 中间件实现
  */
@@ -257,13 +256,22 @@ var shish  = make([]Kabob,0)
  * router.Use(Loger)
  */
 func (r *Router) Use( kabob ... Kabob){
+	kabob = reverse(kabob);
 	shish = append(shish,kabob ...)
 }
 
-func Then(f APIHandler, ds ...Kabob) Handle {
+func reverse(kabobs []Kabob)[]Kabob{
+	for left, right := 0, len(kabobs)-1; left < right; left, right = left+1, right-1 {
+		kabobs[left], kabobs[right] = kabobs[right], kabobs[left]
+	}
+	return kabobs;
+}
+
+func  (r *Router) Then(f Handle, kabob ...Kabob) Handle {
 	decorated := f
-	ds = append(ds,shish ...);
-	for _, decorate := range ds {
+	kabob = reverse(kabob);
+	kabob = append(kabob,shish ...);
+	for _, decorate := range kabob {
 		decorated = decorate(decorated)
 	}
 	return func(w http.ResponseWriter, req *http.Request, ps Params) {
