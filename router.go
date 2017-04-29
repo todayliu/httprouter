@@ -89,6 +89,7 @@ type Handle func(http.ResponseWriter, *http.Request, Params)
 type Param struct {
 	Key   string
 	Value string
+	Context interface{}
 }
 
 // Params is a Param-slice, as returned by the router.
@@ -256,7 +257,7 @@ var shish  = make([]Kabob,0)
  * router.Use(Loger)
  */
 func (r *Router) Use( kabob ... Kabob){
-	kabob = reverse(kabob);
+	kabob = reverse(kabob)
 	shish = append(shish,kabob ...)
 }
 
@@ -264,13 +265,13 @@ func reverse(kabobs []Kabob)[]Kabob{
 	for left, right := 0, len(kabobs)-1; left < right; left, right = left+1, right-1 {
 		kabobs[left], kabobs[right] = kabobs[right], kabobs[left]
 	}
-	return kabobs;
+	return kabobs
 }
 
 func  (r *Router) Then(f Handle, kabob ...Kabob) Handle {
 	decorated := f
-	kabob = reverse(kabob);
-	kabob = append(kabob,shish ...);
+	kabob = reverse(kabob)
+	kabob = append(kabob,shish ...)
 	for _, decorate := range kabob {
 		decorated = decorate(decorated)
 	}
