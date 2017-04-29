@@ -108,6 +108,27 @@ func (ps Params) ByName(name string) string {
 	return ""
 }
 
+func (ps Params) Get(key string) interface{} {
+
+	for i := range ps {
+		if ps[i].Key == key {
+			if( "" == ps[i].Value){
+				return ps[i].Context
+			}else{
+				return ps[i].Value
+			}
+		}
+	}
+	return ""
+}
+/**
+ * 主要是为了给中间件传值
+ */
+func (ps Params) Set(key string,value interface{}) Params {
+	ps = append(ps,Param{Key:key,Context:value})
+	return ps
+}
+
 // Router is a http.Handler which can be used to dispatch requests to different
 // handler functions via configurable routes
 type Router struct {
