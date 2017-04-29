@@ -42,9 +42,14 @@ import (
 	"log"
 )
 
+type User struct {
+	Name string
+}
 
 
 func Index(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	fmt.Println(params.Get("u").(User),"index")
+	fmt.Println(params.Get("leo"))
 	fmt.Fprint(w, "Welcome!\n")
 }
 
@@ -54,13 +59,15 @@ func Hello(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 func V1(next httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 		fmt.Println("1")
+		ps = ps.Append("leo",123)
 		next(w, req, ps)
-		fmt.Println("11")
 	}
 }
 func V2(next httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 		fmt.Println("2")
+		fmt.Println("from V1",ps.Get("leo"))
+		ps = ps.Append("u",User{"leo"})
 		next(w, req, ps)
 		fmt.Println("22")
 	}
@@ -83,7 +90,8 @@ func main() {
 	router := httprouter.New()
 	router.Use(V1,V2)
 	router.GET("/", router.Then(Index,V3,V4))
-	router.GET("/hello/:name", Hello)
+	router.GET("/hello/:name", router.Do(Hello,V3,V4))
+	router.GET("/hi/:name", Hello)
 
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

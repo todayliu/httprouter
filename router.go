@@ -124,7 +124,7 @@ func (ps Params) Get(key string) interface{} {
 /**
  * 主要是为了给中间件传值
  */
-func (ps Params) Set(key string,value interface{}) Params {
+func (ps Params) Append(key string,value interface{}) Params {
 	ps = append(ps,Param{Key:key,Context:value})
 	return ps
 }
@@ -293,6 +293,17 @@ func  (r *Router) Then(f Handle, kabob ...Kabob) Handle {
 	decorated := f
 	kabob = reverse(kabob)
 	kabob = append(kabob,shish ...)
+	for _, decorate := range kabob {
+		decorated = decorate(decorated)
+	}
+	return func(w http.ResponseWriter, req *http.Request, ps Params) {
+		decorated(w, req, ps)
+	}
+}
+
+func  (r *Router) Do(f Handle, kabob ...Kabob) Handle {
+	decorated := f
+	kabob = reverse(kabob)
 	for _, decorate := range kabob {
 		decorated = decorate(decorated)
 	}
