@@ -92,6 +92,7 @@ type Param struct {
 	Context interface{}
 }
 
+
 // Params is a Param-slice, as returned by the router.
 // The slice is ordered, the first URL parameter is also the first slice value.
 // It is therefore safe to read values by the index.
@@ -312,7 +313,9 @@ func reverse(kabobs []Kabob)[]Kabob{
 	}
 	return kabobs
 }
-
+/**
+ * 会执行Use的中间件
+ */
 func  (r *Router) Then(f Handle, kabob ...Kabob) Handle {
 	decorated := f
 	kabob = reverse(kabob)
@@ -324,7 +327,9 @@ func  (r *Router) Then(f Handle, kabob ...Kabob) Handle {
 		decorated(w, req, ps)
 	}
 }
-
+/**
+ * 只会执行handle后需跟的中间件，不会执行Use的
+ */
 func  (r *Router) Do(f Handle, kabob ...Kabob) Handle {
 	decorated := f
 	kabob = reverse(kabob)
