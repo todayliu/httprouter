@@ -60,6 +60,7 @@ func V1(next httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 		fmt.Println("1")
 		ps = ps.Append("leo",123)
+		fmt.Println(params.RequestId())
 		next(w, req, ps)
 	}
 }
@@ -87,7 +88,7 @@ func V4(next httprouter.Handle) httprouter.Handle {
 	}
 }
 func main() {
-	router := httprouter.New()
+	router := httprouter.New(2)
 	router.Use(V1,V2)
 	router.GET("/", router.Then(Index,V3,V4))
 	router.GET("/hello/:name", router.Do(Hello,V3,V4))

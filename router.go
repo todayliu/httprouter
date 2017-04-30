@@ -121,6 +121,16 @@ func (ps Params) Get(key string) interface{} {
 	}
 	return ""
 }
+func (ps Params) RequestId() int64 {
+	for i := range ps {
+		if ps[i].Key == "__requestid" {
+			return ps[i].Context.(int64)
+		}
+	}
+	return 0
+}
+
+
 /**
  * 主要是为了给中间件传值
  */
@@ -184,17 +194,31 @@ type Router struct {
 }
 
 // Make sure the Router conforms with the http.Handler interface
-var _ http.Handler = New()
-
+var _ http.Handler = New(0)
+var requestid *IdWorker
 // New returns a new initialized Router.
 // Path auto-correction, including trailing slashes, is enabled by default.
-func New() *Router {
+// workerid值在（0-1023),表示可以有1023个机子
+func New(workerid int64) *Router {
+	var err error
+	requestid,err= NewIdWorker(workerid)
+	if err != nil{
+		panic("workerid值在（0-1023),表示可以有1023个机子")
+	}
 	return &Router{
 		RedirectTrailingSlash:  true,
 		RedirectFixedPath:      true,
 		HandleMethodNotAllowed: true,
 		HandleOPTIONS:          true,
 	}
+}
+
+
+
+
+func (r *Router) requestparam() Param{
+	rid,_  := requestid.NextId();
+	return Param{Key:"__requestid",Value:"",Context:rid}
 }
 
 // GET is a shortcut for router.Handle("GET", path, handle)
@@ -279,7 +303,7 @@ var shish  = make([]Kabob,0)
  */
 func (r *Router) Use( kabob ... Kabob){
 	kabob = reverse(kabob)
-	shish = append(shish,kabob ...)
+	shish = append(kabob,shish ...)
 }
 
 func reverse(kabobs []Kabob)[]Kabob{
@@ -356,7 +380,9 @@ func (r *Router) recv(w http.ResponseWriter, req *http.Request) {
 // the same path with an extra / without the trailing slash should be performed.
 func (r *Router) Lookup(method, path string) (Handle, Params, bool) {
 	if root := r.trees[method]; root != nil {
-		return root.getValue(path)
+		handler,ps,b := root.getValue(path)
+		ps = append(ps,r.requestparam())
+		return handler,ps,b
 	}
 	return nil, nil, false
 }
@@ -409,6 +435,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	if root := r.trees[req.Method]; root != nil {
 		if handle, ps, tsr := root.getValue(path); handle != nil {
+			ps = append(ps,r.requestparam())
 			handle(w, req, ps)
 			return
 		} else if req.Method != "CONNECT" && path != "/" {
