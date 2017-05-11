@@ -293,34 +293,34 @@ func (r *Router) Handler(method, path string, handler http.Handler) {
 	)
 }
 
-type Kabob func(Handle) Handle
+type Middleware func(Handle) Handle
 /**
  * 中间件实现
  */
-var shish  = make([]Kabob,0)
+var shish  = make([]Middleware,0)
 /**
  * 加入中间件
  * router.Use(Loger)
  */
-func (r *Router) Use( kabob ... Kabob){
-	kabob = reverse(kabob)
-	shish = append(kabob,shish ...)
+func (r *Router) Use( middleware ... Middleware){
+	middleware = reverse(middleware)
+	shish = append(middleware,shish ...)
 }
 
-func reverse(kabobs []Kabob)[]Kabob{
-	for left, right := 0, len(kabobs)-1; left < right; left, right = left+1, right-1 {
-		kabobs[left], kabobs[right] = kabobs[right], kabobs[left]
+func reverse(middlewares []Middleware)[]Middleware{
+	for left, right := 0, len(middlewares)-1; left < right; left, right = left+1, right-1 {
+		middlewares[left], middlewares[right] = middlewares[right], middlewares[left]
 	}
-	return kabobs
+	return middlewares
 }
 /**
  * 会执行Use的中间件
  */
-func  (r *Router) Then(f Handle, kabob ...Kabob) Handle {
+func  (r *Router) Then(f Handle, middlewares ...Middleware) Handle {
 	decorated := f
-	kabob = reverse(kabob)
-	kabob = append(kabob,shish ...)
-	for _, decorate := range kabob {
+	middlewares = reverse(middlewares)
+	middlewares = append(middlewares,shish ...)
+	for _, decorate := range middlewares {
 		decorated = decorate(decorated)
 	}
 	return func(w http.ResponseWriter, req *http.Request, ps Params) {
@@ -330,10 +330,10 @@ func  (r *Router) Then(f Handle, kabob ...Kabob) Handle {
 /**
  * 只会执行handle后需跟的中间件，不会执行Use的
  */
-func  (r *Router) Do(f Handle, kabob ...Kabob) Handle {
+func  (r *Router) Do(f Handle, middlewares ...Middleware) Handle {
 	decorated := f
-	kabob = reverse(kabob)
-	for _, decorate := range kabob {
+	middlewares = reverse(middlewares)
+	for _, decorate := range middlewares {
 		decorated = decorate(decorated)
 	}
 	return func(w http.ResponseWriter, req *http.Request, ps Params) {
