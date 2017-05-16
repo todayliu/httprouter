@@ -120,7 +120,7 @@ func (ps Params) Get(key string) interface{} {
 			}
 		}
 	}
-	return ""
+	return nil
 }
 func (ps Params) RequestId() int64 {
 	for i := range ps {
